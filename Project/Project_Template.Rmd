@@ -13,6 +13,9 @@ mainfont: Times New Roman
 
 ---
 
+Energy Data available: https://www.eia.gov/electricity/data/eia860/
+
+
 \newpage
 \tableofcontents 
 \newpage
