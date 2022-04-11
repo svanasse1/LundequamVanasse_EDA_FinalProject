@@ -7,6 +7,12 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidycensus)
+library(tidyverse)
+library(tigris)
+options(tigris_use_cache = TRUE)
+
+census_api_key("a8cad28557bae7c89aae6ea747549dd4816c6fbd")
 ```
 
 ## R Markdown
@@ -15,8 +21,57 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
+```{r census}
+# American Community Survey (ACS) has data on income, decennial does not
+# ACS has yearly data, decennial is every 10 years
+
+allCensusVariables = load_variables(year, "acs5", cache=TRUE)
+View(allCensusVariables)
+
+censusVariables = c(
+  "Median Family Income" = "B19113_001",
+  "Total Population" = "B25026_001" # in occupied housing units
+)
+
+getCensusData = function(geography="state") {
+  # gets ACS census data from 2010 to 2020
+  
+  dataList = list()
+  for (i in 1:11) {
+    year = 2009 + i
+    data = get_acs(geography=geography, # state, county, block, block group 
+                   year=year,
+                   # geometry = TRUE, THIS DOES NOT WORK
+                   variables=c(
+                    censusVariables["Median Family Income"],
+                    censusVariables["Total Population"])) %>%
+      pivot_wider(id_cols="NAME", names_from="variable", values_from="estimate") %>%
+      mutate(Year=year)
+    
+    if (geography == "state") {
+      data = data %>%
+        mutate(State=state.abb[match(NAME, state.name)])
+    } else if (geography == "county") {
+      data = data %>%
+        mutate(
+          County=strsplit(NAME, ', ')[[1]][1],
+          State=state.abb[match(strsplit(NAME, ', ')[[1]][2],state.name)]
+        )
+    }
+    
+    dataList[[i]] = data # add it to your list
+  }
+  
+  censusData = do.call(rbind, dataList)
+  censusData 
+}
+
+geography = "county"
+censusData = getCensusData(geography=geography)
+View(censusData)
+
+write.csv(censusData, paste("../Data/census_acs_", geography, ".csv", sep=""))
+
 ```
 
 ## Including Plots

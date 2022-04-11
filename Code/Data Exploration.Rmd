@@ -7,10 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidycensus)
 library(tidyverse)
 
-census_api_key("a8cad28557bae7c89aae6ea747549dd4816c6fbd")
 ```
 
 ## R Markdown
@@ -21,28 +19,13 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r, census, fig.height=11}
 
-# American Community Survey (ACS) has data on income, decennial does not
+censusDataCounty = read.csv("../Data/census_acs_state.csv")
+censusDataState = read.csv("../Data/census_acs_state.csv")
 
-year = 2010
+View(censusDataState)
 
-censusVariables = load_variables(year, "acs5", cache=TRUE)
-View(censusVariables)
-
-variables = c(
-  "Median Family Income" = "B19113_001",
-  "Total Population" = "B25026_001" # in occupied housing units
-)
-
-data = get_acs(geography = "state", # state, county, block, block group 
-               year=year,
-               variables = c(
-                 variables["Median Family Income"],
-                 variables["Total Population"])) %>%
-  pivot_wider(id_cols="NAME", names_from="variable", values_from="estimate")
-  
-View(data)
-
-ggplot(data, aes(x=`Median Family Income`, y=reorder(NAME, `Median Family Income`))) +
+ggplot(censusDataState[censusDataState$Year==2010,], 
+       aes(x=Median.Family.Income, y=reorder(NAME, Median.Family.Income))) +
   geom_point() + 
   labs(x="Median Household Income", y="State")
 ```
